@@ -155,7 +155,7 @@ function ajaxPatch<T>(url: string, body?: any, headers?: Record<string, string>)
   return ajax({ method: 'PATCH', url, body, headers });
 }
 
-const mapResponse = map((x: AjaxResponse<any>) => x.response);
+const mapResponse = map((x: AjaxResponse<any>) => x.response).operatorFunction;
 
 function ajaxGetJSON<T>(url: string, headers?: Record<string, string>): Observable<T> {
   return mapResponse(

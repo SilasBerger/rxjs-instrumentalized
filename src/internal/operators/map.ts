@@ -1,10 +1,10 @@
-import { OperatorFunction } from '../types';
-import { operate } from '../util/lift';
-import { createOperatorSubscriber } from './OperatorSubscriber';
+import {OperatorFunction, OperatorTag, OperatorObject, OperatorLogger} from '../types';
+import {operate} from '../util/lift';
+import {createOperatorSubscriber} from './OperatorSubscriber';
 
-export function map<T, R>(project: (value: T, index: number) => R): OperatorFunction<T, R>;
+export function map<T, R>(project: (value: T, index: number) => R): OperatorObject<T, R>;
 /** @deprecated Use a closure instead of a `thisArg`. Signatures accepting a `thisArg` will be removed in v8. */
-export function map<T, R, A>(project: (this: A, value: T, index: number) => R, thisArg: A): OperatorFunction<T, R>;
+export function map<T, R, A>(project: (this: A, value: T, index: number) => R, thisArg: A): OperatorObject<T, R>;
 
 /**
  * Applies a given `project` function to each value emitted by the source
@@ -45,18 +45,24 @@ export function map<T, R, A>(project: (this: A, value: T, index: number) => R, t
  * @return A function that returns an Observable that emits the values from the
  * source Observable transformed by the given `project` function.
  */
-export function map<T, R>(project: (value: T, index: number) => R, thisArg?: any): OperatorFunction<T, R> {
-  return operate((source, subscriber) => {
+export function map<T, R>(project: (value: T, index: number) => R, thisArg?: any): OperatorObject<T, R> {
+  const logger = new OperatorLogger(OperatorTag.MAP);
+  const operatorFunction: OperatorFunction<T, R> = operate((source, subscriber) => {
     // The index of the value from the source. Used with projection.
     let index = 0;
     // Subscribe to the source, all errors and completions are sent along
     // to the consumer.
+    // @ts-ignore
     source.subscribe(
       createOperatorSubscriber(subscriber, (value: T) => {
         // Call the projection function with the appropriate this context,
         // and send the resulting value to the consumer.
-        subscriber.next(project.call(thisArg, value, index++));
+        const projectedValue = project.call(thisArg, value, index++);
+        logger.log(`Mapping ${value} -> ${projectedValue}`)
+        subscriber.next(projectedValue);
       })
     );
   });
+
+  return {operatorFunction, logger};
 }

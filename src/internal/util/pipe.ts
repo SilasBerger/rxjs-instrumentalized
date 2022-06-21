@@ -1,5 +1,5 @@
-import { identity } from './identity';
-import { UnaryFunction } from '../types';
+import {identity} from './identity';
+import {OperatorObject, UnaryFunction} from '../types';
 
 export function pipe(): typeof identity;
 export function pipe<T, A>(fn1: UnaryFunction<T, A>): UnaryFunction<T, A>;
@@ -73,14 +73,25 @@ export function pipe<T, A, B, C, D, E, F, G, H, I>(
  * pipe() can be called on one or more functions, each of which can take one argument ("UnaryFunction")
  * and uses it to return a value.
  * It returns a function that takes one argument, passes it to the first UnaryFunction, and then
- * passes the result to the next one, passes that result to the next one, and so on.  
+ * passes the result to the next one, passes that result to the next one, and so on.
  */
-export function pipe(...fns: Array<UnaryFunction<any, any>>): UnaryFunction<any, any> {
-  return pipeFromArray(fns);
+export function pipe(...operators: (Array<UnaryFunction<any, any>> | Array<OperatorObject<any, any>>)): UnaryFunction<any, any> {
+  return pipeFromArray(operators);
 }
 
 /** @internal */
-export function pipeFromArray<T, R>(fns: Array<UnaryFunction<T, R>>): UnaryFunction<T, R> {
+export function pipeFromArray<T, R>(operators: Array<UnaryFunction<T, R>> | Array<OperatorObject<T, R>>): UnaryFunction<T, R> {
+  let fns: Array<UnaryFunction<any, any>>;
+  if (operators.length > 0 && operators[0].hasOwnProperty('operatorFunction')) {
+    (operators as Array<OperatorObject<any, any>>).forEach((op, index) => {
+      op.logger.pipeId = 'someRandomPipe';
+      op.logger.pipeIndex = index;
+    });
+    fns = (operators as Array<OperatorObject<any, any>>).map((op) => op.operatorFunction);
+  } else {
+    fns = operators as Array<UnaryFunction<any, any>>;
+  }
+
   if (fns.length === 0) {
     return identity as UnaryFunction<any, any>;
   }

@@ -35,5 +35,5 @@ import { map } from './map';
  * each item emitted by the source Observable indicating when it was emitted.
  */
 export function timestamp<T>(timestampProvider: TimestampProvider = dateTimestampProvider): OperatorFunction<T, Timestamp<T>> {
-  return map((value: T) => ({ value, timestamp: timestampProvider.now() }));
+  return map((value: T) => ({ value, timestamp: timestampProvider.now() })).operatorFunction;
 }

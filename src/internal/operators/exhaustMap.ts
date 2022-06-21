@@ -73,7 +73,7 @@ export function exhaustMap<T, R, O extends ObservableInput<any>>(
   if (resultSelector) {
     // DEPRECATED PATH
     return (source: Observable<T>) =>
-      source.pipe(exhaustMap((a, i) => innerFrom(project(a, i)).pipe(map((b: any, ii: any) => resultSelector(a, b, i, ii)))));
+      source.pipe(exhaustMap((a, i) => innerFrom(project(a, i)).pipe(map((b: any, ii: any) => resultSelector(a, b, i, ii)).operatorFunction)));
   }
   return operate((source, subscriber) => {
     let index = 0;

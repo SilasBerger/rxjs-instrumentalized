@@ -87,7 +87,7 @@ export function mergeMap<T, R, O extends ObservableInput<any>>(
 ): OperatorFunction<T, ObservedValueOf<O> | R> {
   if (isFunction(resultSelector)) {
     // DEPRECATED PATH
-    return mergeMap((a, i) => map((b: any, ii: number) => resultSelector(a, b, i, ii))(innerFrom(project(a, i))), concurrent);
+    return mergeMap((a, i) => map((b: any, ii: number) => resultSelector(a, b, i, ii)).operatorFunction(innerFrom(project(a, i))), concurrent);
   } else if (typeof resultSelector === 'number') {
     concurrent = resultSelector;
   }

@@ -120,6 +120,10 @@ export function tap<T>(
 
   return tapObserver
     ? operate((source, subscriber) => {
+          // console.log('Inside the operate call of the tap operator!');
+          // @ts-ignore
+          // this.log('I am the tap operator');
+          // console.log(`In tap operator - this = ${this}`);
         tapObserver.subscribe?.();
         let isUnsub = true;
         source.subscribe(

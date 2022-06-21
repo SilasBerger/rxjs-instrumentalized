@@ -102,5 +102,5 @@ export function pluck<T, R>(...properties: Array<string | number | symbol>): Ope
       }
     }
     return currentProp;
-  });
+  }).operatorFunction;
 }

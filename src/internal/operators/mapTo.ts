@@ -44,5 +44,5 @@ export function mapTo<T, R>(value: R): OperatorFunction<T, R>;
  * @deprecated To be removed in v9. Use {@link map} instead: `map(() => value)`.
  */
 export function mapTo<R>(value: R): OperatorFunction<unknown, R> {
-  return map(() => value);
+  return map(() => value).operatorFunction;
 }

@@ -22,6 +22,36 @@ export interface UnaryFunction<T, R> {
 
 export interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {}
 
+export class OperatorLogger {
+
+  private _pipeId?: string;
+  private _pipeIndex?: number;
+
+  constructor(private readonly _operatorTag: OperatorTag) {
+  }
+
+  public set pipeId(id: string) {
+    this._pipeId = id;
+  }
+
+  public set pipeIndex(index: number) {
+    this._pipeIndex = index;
+  }
+
+  public log(msg: string): void {
+    console.log(`${this._operatorTag}@${this._pipeId}[${this._pipeIndex}]: ${msg}`);
+  }
+}
+
+export interface OperatorObject<T, R> {
+  operatorFunction: OperatorFunction<T, R>,
+  logger: OperatorLogger
+}
+
+export enum OperatorTag {
+  MAP = 'map',
+}
+
 export type FactoryOrValue<T> = T | (() => T);
 
 export interface MonoTypeOperatorFunction<T> extends OperatorFunction<T, T> {}
