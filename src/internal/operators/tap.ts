@@ -1,8 +1,8 @@
-import { MonoTypeOperatorFunction, Observer } from '../types';
-import { isFunction } from '../util/isFunction';
-import { operate } from '../util/lift';
-import { createOperatorSubscriber } from './OperatorSubscriber';
-import { identity } from '../util/identity';
+import {MonoTypeOperatorFunction, Observer, OperatorLogger, OperatorObject, OperatorTag} from '../types';
+import {isFunction} from '../util/isFunction';
+import {operate} from '../util/lift';
+import {createOperatorSubscriber} from './OperatorSubscriber';
+import {identity} from '../util/identity';
 
 export interface TapObserver<T> extends Observer<T> {
   subscribe: () => void;
@@ -10,14 +10,14 @@ export interface TapObserver<T> extends Observer<T> {
   finalize: () => void;
 }
 
-export function tap<T>(observer?: Partial<TapObserver<T>>): MonoTypeOperatorFunction<T>;
-export function tap<T>(next: (value: T) => void): MonoTypeOperatorFunction<T>;
+export function tap<T>(observer?: Partial<TapObserver<T>>): OperatorObject<T, T>;
+export function tap<T>(next: (value: T) => void): OperatorObject<T, T>;
 /** @deprecated Instead of passing separate callback arguments, use an observer argument. Signatures taking separate callback arguments will be removed in v8. Details: https://rxjs.dev/deprecations/subscribe-arguments */
 export function tap<T>(
   next?: ((value: T) => void) | null,
   error?: ((error: any) => void) | null,
   complete?: (() => void) | null
-): MonoTypeOperatorFunction<T>;
+): OperatorObject<T, T>;
 
 /**
  * Used to perform side-effects for notifications from the source observable
@@ -108,7 +108,7 @@ export function tap<T>(
   observerOrNext?: Partial<TapObserver<T>> | ((value: T) => void) | null,
   error?: ((e: any) => void) | null,
   complete?: (() => void) | null
-): MonoTypeOperatorFunction<T> {
+): OperatorObject<T, T> {
   // We have to check to see not only if next is a function,
   // but if error or complete were passed. This is because someone
   // could technically call tap like `tap(null, fn)` or `tap(null, null, fn)`.
@@ -118,42 +118,42 @@ export function tap<T>(
         ({ next: observerOrNext as Exclude<typeof observerOrNext, Partial<TapObserver<T>>>, error, complete } as Partial<TapObserver<T>>)
       : observerOrNext;
 
-  return tapObserver
-    ? operate((source, subscriber) => {
-          // console.log('Inside the operate call of the tap operator!');
-          // @ts-ignore
-          // this.log('I am the tap operator');
-          // console.log(`In tap operator - this = ${this}`);
-        tapObserver.subscribe?.();
-        let isUnsub = true;
-        source.subscribe(
-          createOperatorSubscriber(
-            subscriber,
-            (value) => {
-              tapObserver.next?.(value);
-              subscriber.next(value);
-            },
-            () => {
-              isUnsub = false;
-              tapObserver.complete?.();
-              subscriber.complete();
-            },
-            (err) => {
-              isUnsub = false;
-              tapObserver.error?.(err);
-              subscriber.error(err);
-            },
-            () => {
-              if (isUnsub) {
-                tapObserver.unsubscribe?.();
-              }
-              tapObserver.finalize?.();
-            }
-          )
-        );
-      })
-    : // Tap was called with no valid tap observer or handler
-      // (e.g. `tap(null, null, null)` or `tap(null)` or `tap()`)
-      // so we're going to just mirror the source.
-      identity;
+    const logger = new OperatorLogger(OperatorTag.TAP);
+    let operatorFunction: MonoTypeOperatorFunction<T>;
+    if (tapObserver) {
+        operatorFunction = operate((source, subscriber) => {
+            tapObserver.subscribe?.();
+            let isUnsub = true;
+            source.subscribe(
+                createOperatorSubscriber(
+                    subscriber,
+                    (value) => {
+                        logger.log('Tapping...');
+                        tapObserver.next?.(value);
+                        subscriber.next(value);
+                    },
+                    () => {
+                        isUnsub = false;
+                        tapObserver.complete?.();
+                        subscriber.complete();
+                    },
+                    (err) => {
+                        isUnsub = false;
+                        tapObserver.error?.(err);
+                        subscriber.error(err);
+                    },
+                    () => {
+                        if (isUnsub) {
+                            tapObserver.unsubscribe?.();
+                        }
+                        tapObserver.finalize?.();
+                    }
+                )
+            );
+        })
+    } else {
+        operatorFunction = identity;
+    }
+
+    return {operatorFunction, logger};
 }

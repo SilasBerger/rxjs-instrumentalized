@@ -26,6 +26,7 @@ export class OperatorLogger {
 
   private _pipeId?: string;
   private _pipeIndex?: number;
+  private _pipeRunCounter?: PipeRunCounter;
 
   constructor(private readonly _operatorTag: OperatorTag) {
   }
@@ -38,8 +39,29 @@ export class OperatorLogger {
     this._pipeIndex = index;
   }
 
+  public set pipeRunCounter(counter: PipeRunCounter) {
+    this._pipeRunCounter = counter;
+  }
+
   public log(msg: string): void {
-    console.log(`${this._operatorTag}@${this._pipeId}[${this._pipeIndex}]: ${msg}`);
+    if (this._pipeIndex === 0) {
+      this._pipeRunCounter?.increment();
+    }
+    const currentCount = this._pipeRunCounter?.getCount();
+    console.log(`${this._operatorTag}@${this._pipeId}[${this._pipeIndex}]~${currentCount}: ${msg}`);
+  }
+}
+
+export class PipeRunCounter {
+
+  private _count: number = -1;
+
+  public increment(): void {
+    this._count++;
+  }
+
+  public getCount(): number {
+    return this._count;
   }
 }
 
@@ -50,6 +72,7 @@ export interface OperatorObject<T, R> {
 
 export enum OperatorTag {
   MAP = 'map',
+  TAP = 'tap',
 }
 
 export type FactoryOrValue<T> = T | (() => T);
