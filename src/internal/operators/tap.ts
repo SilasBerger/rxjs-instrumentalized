@@ -1,4 +1,4 @@
-import {MonoTypeOperatorFunction, Observer, OperatorLogger, OperatorObject, OperatorTag} from '../types';
+import {MonoTypeOperatorFunction, Observer, OperatorContext, OperatorObject, OperatorTag} from '../types';
 import {isFunction} from '../util/isFunction';
 import {operate} from '../util/lift';
 import {createOperatorSubscriber} from './OperatorSubscriber';
@@ -118,7 +118,7 @@ export function tap<T>(
         ({ next: observerOrNext as Exclude<typeof observerOrNext, Partial<TapObserver<T>>>, error, complete } as Partial<TapObserver<T>>)
       : observerOrNext;
 
-    const logger = new OperatorLogger(OperatorTag.TAP);
+    const logger = new OperatorContext(OperatorTag.TAP);
     let operatorFunction: MonoTypeOperatorFunction<T>;
     if (tapObserver) {
         operatorFunction = operate((source, subscriber) => {
@@ -128,7 +128,7 @@ export function tap<T>(
                 createOperatorSubscriber(
                     subscriber,
                     (value) => {
-                        logger.log('Tapping...');
+                        logger.emit('Tapping...');
                         tapObserver.next?.(value);
                         subscriber.next(value);
                     },
@@ -155,5 +155,5 @@ export function tap<T>(
         operatorFunction = identity;
     }
 
-    return {operatorFunction, logger};
+    return {operatorFunction, context: logger};
 }

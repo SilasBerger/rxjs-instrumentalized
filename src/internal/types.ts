@@ -22,10 +22,10 @@ export interface UnaryFunction<T, R> {
 
 export interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Observable<R>> {}
 
-export class OperatorLogger {
+export class OperatorContext {
 
   private _pipeId?: string;
-  private _pipeIndex?: number;
+  private _operatorIndex?: number;
   private _pipeRunCounter?: PipeRunCounter;
 
   constructor(private readonly _operatorTag: OperatorTag) {
@@ -35,20 +35,30 @@ export class OperatorLogger {
     this._pipeId = id;
   }
 
-  public set pipeIndex(index: number) {
-    this._pipeIndex = index;
+  public set operatorIndex(index: number) {
+    this._operatorIndex = index;
   }
 
   public set pipeRunCounter(counter: PipeRunCounter) {
     this._pipeRunCounter = counter;
   }
 
-  public log(msg: string): void {
-    if (this._pipeIndex === 0) {
+  public get tag(): OperatorTag {
+    return this._operatorTag;
+  }
+
+  public emit(payload: any): void {
+    if (this._operatorIndex === 0) {
       this._pipeRunCounter?.increment();
     }
     const currentCount = this._pipeRunCounter?.getCount();
-    console.log(`${this._operatorTag}@${this._pipeId}[${this._pipeIndex}]~${currentCount}: ${msg}`);
+    const operatorEvent = {
+      pipeId: this._pipeId,
+      pipeRun: currentCount,
+      operatorIndex: this._operatorIndex,
+      payload
+    };
+    (window as any).operatorEvents$.next(operatorEvent);
   }
 }
 
@@ -67,12 +77,21 @@ export class PipeRunCounter {
 
 export interface OperatorObject<T, R> {
   operatorFunction: OperatorFunction<T, R>,
-  logger: OperatorLogger
+  context: OperatorContext
 }
 
 export enum OperatorTag {
   MAP = 'map',
   TAP = 'tap',
+}
+
+export interface OperatorMap {
+  [key: number]: OperatorTag
+}
+
+export interface PipeDescription {
+  pipeId: string,
+  operators: OperatorMap
 }
 
 export type FactoryOrValue<T> = T | (() => T);

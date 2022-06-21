@@ -1,5 +1,5 @@
 import {identity} from './identity';
-import {OperatorObject, PipeRunCounter, UnaryFunction} from '../types';
+import {OperatorMap, OperatorObject, OperatorTag, PipeRunCounter, UnaryFunction} from '../types';
 
 export function pipe(): typeof identity;
 export function pipe<T, A>(fn1: UnaryFunction<T, A>): UnaryFunction<T, A>;
@@ -101,11 +101,14 @@ export function pipeFromArray<T, R>(operators: Array<UnaryFunction<T, R>> | Arra
 
   if (allAreOperatorObject) {
     const counter = new PipeRunCounter();
+    const operatorMap: OperatorMap = {};
     (operators as Array<OperatorObject<any, any>>).forEach((op, index) => {
-      op.logger.pipeId = 'someRandomPipe';
-      op.logger.pipeIndex = index;
-      op.logger.pipeRunCounter = counter;
+      op.context.pipeId = 'someRandomPipe';
+      op.context.operatorIndex = index;
+      op.context.pipeRunCounter = counter;
+      operatorMap[index] = op.context.tag;
     });
+    (window as any).pipeDescriptions$?.next({pipeId: 'someRandomPipe', operators: operatorMap});
     fns = (operators as Array<OperatorObject<any, any>>).map((op) => op.operatorFunction);
   } else {
     fns = operators as Array<UnaryFunction<any, any>>;
