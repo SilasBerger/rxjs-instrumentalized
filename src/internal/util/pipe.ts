@@ -79,10 +79,27 @@ export function pipe(...operators: (Array<UnaryFunction<any, any>> | Array<Opera
   return pipeFromArray(operators);
 }
 
+function isOperatorObject(value: any): boolean {
+  return typeof value === 'object' && value.hasOwnProperty('operatorFunction');
+}
+
 /** @internal */
 export function pipeFromArray<T, R>(operators: Array<UnaryFunction<T, R>> | Array<OperatorObject<T, R>>): UnaryFunction<T, R> {
   let fns: Array<UnaryFunction<any, any>>;
-  if (operators.length > 0 && operators[0].hasOwnProperty('operatorFunction')) {
+
+  if (operators.length === 0) {
+    return identity as UnaryFunction<any, any>;
+  }
+
+  const allAreOperatorObject = (operators as Array<any>).every(isOperatorObject);
+  const noneAreOperatorObject = !(operators as Array<any>).some(isOperatorObject);
+
+  if (!allAreOperatorObject && !noneAreOperatorObject) {
+    console.error('Cannot mix operator types: either all or none must return operator object.');
+    return identity as UnaryFunction<any, any>;
+  }
+
+  if (allAreOperatorObject) {
     (operators as Array<OperatorObject<any, any>>).forEach((op, index) => {
       op.logger.pipeId = 'someRandomPipe';
       op.logger.pipeIndex = index;
