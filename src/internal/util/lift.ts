@@ -1,6 +1,6 @@
 import { Observable } from '../Observable';
 import { Subscriber } from '../Subscriber';
-import { OperatorFunction } from '../types';
+import {OperatorContext, OperatorFunction} from '../types';
 import { isFunction } from './isFunction';
 
 /**
@@ -13,9 +13,11 @@ export function hasLift(source: any): source is { lift: InstanceType<typeof Obse
 /**
  * Creates an `OperatorFunction`. Used to define operators throughout the library in a concise way.
  * @param init The logic to connect the liftedSource to the subscriber at the moment of subscription.
+ * @param operatorContext
  */
 export function operate<T, R>(
-  init: (liftedSource: Observable<T>, subscriber: Subscriber<R>) => (() => void) | void
+  init: (liftedSource: Observable<T>, subscriber: Subscriber<R>) => (() => void) | void,
+  operatorContext?: OperatorContext
 ): OperatorFunction<T, R> {
   return (source: Observable<T>) => {
     if (hasLift(source)) {
@@ -25,7 +27,7 @@ export function operate<T, R>(
         } catch (err) {
           this.error(err);
         }
-      });
+      }, operatorContext);
     }
     throw new TypeError('Unable to lift unknown Observable type');
   };

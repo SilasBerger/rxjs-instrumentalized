@@ -155,7 +155,8 @@
   },
   "homepage": "https://rxjs.dev",
   "dependencies": {
-    "tslib": "^2.1.0"
+    "tslib": "^2.1.0",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@angular-devkit/build-optimizer": "0.4.6",
@@ -170,6 +171,7 @@
     "@types/sinon": "4.1.3",
     "@types/sinon-chai": "2.7.29",
     "@types/source-map": "^0.5.2",
+    "@types/uuid": "^8.3.4",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "babel-polyfill": "6.26.0",

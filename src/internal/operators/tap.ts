@@ -118,7 +118,7 @@ export function tap<T>(
         ({ next: observerOrNext as Exclude<typeof observerOrNext, Partial<TapObserver<T>>>, error, complete } as Partial<TapObserver<T>>)
       : observerOrNext;
 
-    const logger = new OperatorContext(OperatorTag.TAP);
+    const operatorContext = new OperatorContext(OperatorTag.TAP);
     let operatorFunction: MonoTypeOperatorFunction<T>;
     if (tapObserver) {
         operatorFunction = operate((source, subscriber) => {
@@ -128,7 +128,7 @@ export function tap<T>(
                 createOperatorSubscriber(
                     subscriber,
                     (value) => {
-                        logger.emit('Tapping...');
+                        operatorContext.emit('Tapping...');
                         tapObserver.next?.(value);
                         subscriber.next(value);
                     },
@@ -150,10 +150,10 @@ export function tap<T>(
                     }
                 )
             );
-        })
+        }, operatorContext)
     } else {
         operatorFunction = identity;
     }
 
-    return {operatorFunction, context: logger};
+    return {operatorFunction, context: operatorContext};
 }

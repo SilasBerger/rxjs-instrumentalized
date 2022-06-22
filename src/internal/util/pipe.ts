@@ -1,5 +1,11 @@
 import {identity} from './identity';
-import {OperatorMap, OperatorObject, OperatorTag, PipeRunCounter, UnaryFunction} from '../types';
+import {
+  ObservableContext,
+  OperatorMap,
+  OperatorObject,
+  RxjsEventType,
+  UnaryFunction
+} from '../types';
 
 export function pipe(): typeof identity;
 export function pipe<T, A>(fn1: UnaryFunction<T, A>): UnaryFunction<T, A>;
@@ -84,7 +90,7 @@ function isOperatorObject(value: any): boolean {
 }
 
 /** @internal */
-export function pipeFromArray<T, R>(operators: Array<UnaryFunction<T, R>> | Array<OperatorObject<T, R>>): UnaryFunction<T, R> {
+export function pipeFromArray<T, R>(operators: Array<UnaryFunction<T, R>> | Array<OperatorObject<T, R>>, observableContext?: ObservableContext): UnaryFunction<T, R> {
   let fns: Array<UnaryFunction<any, any>>;
 
   if (operators.length === 0) {
@@ -100,15 +106,18 @@ export function pipeFromArray<T, R>(operators: Array<UnaryFunction<T, R>> | Arra
   }
 
   if (allAreOperatorObject) {
-    const counter = new PipeRunCounter();
+    if (!observableContext) {
+      console.error('Using operator objects but no ObservableContext given.');
+      return identity as UnaryFunction<any, any>;
+    }
+
     const operatorMap: OperatorMap = {};
     (operators as Array<OperatorObject<any, any>>).forEach((op, index) => {
-      op.context.pipeId = 'someRandomPipe';
       op.context.operatorIndex = index;
-      op.context.pipeRunCounter = counter;
+      op.context.observableContext = observableContext;
       operatorMap[index] = op.context.tag;
     });
-    (window as any).pipeDescriptions$?.next({pipeId: 'someRandomPipe', operators: operatorMap});
+    (window as any).rxjsBus$?.next({type: RxjsEventType.PIPE, observableContext: observableContext, operators: operatorMap});
     fns = (operators as Array<OperatorObject<any, any>>).map((op) => op.operatorFunction);
   } else {
     fns = operators as Array<UnaryFunction<any, any>>;

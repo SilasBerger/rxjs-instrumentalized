@@ -1,5 +1,5 @@
 import { isFunction } from './util/isFunction';
-import { Observer, ObservableNotification } from './types';
+import {Observer, ObservableNotification, ObservableContext} from './types';
 import { isSubscription, Subscription } from './Subscription';
 import { config } from './config';
 import { reportUnhandledError } from './util/reportUnhandledError';
@@ -43,6 +43,8 @@ export class Subscriber<T> extends Subscription implements Observer<T> {
   /** @deprecated Internal implementation detail, do not use directly. Will be made internal in v8. */
   protected destination: Subscriber<any> | Observer<any>; // this `any` is the escape hatch to erase extra type param (e.g. R)
 
+  protected _observableContext?: ObservableContext;
+
   /**
    * @deprecated Internal implementation detail, do not use directly. Will be made internal in v8.
    * There is no reason to directly create an instance of Subscriber. This type is exported for typings reasons.
@@ -69,11 +71,16 @@ export class Subscriber<T> extends Subscription implements Observer<T> {
    * @return {void}
    */
   next(value?: T): void {
+    this._observableContext?.incrementEmissionsCount();
     if (this.isStopped) {
       handleStoppedNotification(nextNotification(value), this);
     } else {
       this._next(value!);
     }
+  }
+
+  set observableContext(context: ObservableContext) {
+    this._observableContext = context;
   }
 
   /**

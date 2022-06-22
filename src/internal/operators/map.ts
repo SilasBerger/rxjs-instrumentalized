@@ -46,7 +46,7 @@ export function map<T, R, A>(project: (this: A, value: T, index: number) => R, t
  * source Observable transformed by the given `project` function.
  */
 export function map<T, R>(project: (value: T, index: number) => R, thisArg?: any): OperatorObject<T, R> {
-  const logger = new OperatorContext(OperatorTag.MAP);
+  const operatorContext = new OperatorContext(OperatorTag.MAP);
   const operatorFunction: OperatorFunction<T, R> = operate((source, subscriber) => {
     // The index of the value from the source. Used with projection.
     let index = 0;
@@ -58,11 +58,11 @@ export function map<T, R>(project: (value: T, index: number) => R, thisArg?: any
         // Call the projection function with the appropriate this context,
         // and send the resulting value to the consumer.
         const projectedValue = project.call(thisArg, value, index++);
-        logger.emit(`Mapping ${value} -> ${projectedValue}`)
+        operatorContext.emit(`Mapping ${value} -> ${projectedValue}`)
         subscriber.next(projectedValue);
       })
     );
-  });
+  }, operatorContext);
 
-  return {operatorFunction, context: logger};
+  return {operatorFunction, context: operatorContext};
 }

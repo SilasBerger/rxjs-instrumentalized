@@ -1,7 +1,15 @@
 import { Operator } from './Operator';
 import { SafeSubscriber, Subscriber } from './Subscriber';
 import { isSubscription, Subscription } from './Subscription';
-import { TeardownLogic, OperatorFunction, Subscribable, Observer } from './types';
+import {
+  TeardownLogic,
+  OperatorFunction,
+  Subscribable,
+  Observer,
+  RxjsEventType,
+  ObservableContext,
+  OperatorContext
+} from './types';
 import { observable as Symbol_observable } from './symbol/observable';
 import { pipeFromArray } from './util/pipe';
 import { config } from './config';
@@ -25,17 +33,26 @@ export class Observable<T> implements Subscribable<T> {
    */
   operator: Operator<any, T> | undefined;
 
+  readonly _observableContext: ObservableContext;
+
   /**
    * @constructor
    * @param {Function} subscribe the function that is called when the Observable is
    * initially subscribed to. This function is given a Subscriber, to which new values
    * can be `next`ed, or an `error` method can be called to raise an error, or
    * `complete` can be called to notify of a successful completion.
+   * @param ignored
    */
-  constructor(subscribe?: (this: Observable<T>, subscriber: Subscriber<T>) => TeardownLogic) {
+  constructor(subscribe?: (this: Observable<T>, subscriber: Subscriber<T>) => TeardownLogic, ignored: boolean = false) {
+    this._observableContext = new ObservableContext(ignored);
+    (window as any).rxjsBus$?.next({type: RxjsEventType.OBSERVABLE, context: this._observableContext})
     if (subscribe) {
       this._subscribe = subscribe;
     }
+  }
+
+  get observableContext() {
+    return this._observableContext;
   }
 
   // HACK: Since TypeScript inherits static properties too, we have to
@@ -64,8 +81,9 @@ export class Observable<T> implements Subscribable<T> {
    * operator by simply returning `new Observable()` directly. See "Creating new operators from
    * scratch" section here: https://rxjs.dev/guide/operators
    */
-  lift<R>(operator?: Operator<T, R>): Observable<R> {
+  lift<R>(operator?: Operator<T, R>, operatorContext?: OperatorContext): Observable<R> {
     const observable = new Observable<R>();
+    (window as any).rxjsBus$?.next({type: RxjsEventType.LIFT, from: this._observableContext, to: observable.observableContext, operator: operatorContext})
     observable.source = this;
     observable.operator = operator;
     return observable;
@@ -217,6 +235,7 @@ export class Observable<T> implements Subscribable<T> {
     complete?: (() => void) | null
   ): Subscription {
     const subscriber = isSubscriber(observerOrNext) ? observerOrNext : new SafeSubscriber(observerOrNext, error, complete);
+    subscriber.observableContext = this._observableContext;
 
     errorContext(() => {
       const { operator, source } = this;
@@ -435,7 +454,7 @@ export class Observable<T> implements Subscribable<T> {
    * ```
    */
   pipe(...operations: OperatorFunction<any, any>[]): Observable<any> {
-    return pipeFromArray(operations)(this);
+    return pipeFromArray(operations, this._observableContext)(this);
   }
 
   /* tslint:disable:max-line-length */

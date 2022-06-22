@@ -3,6 +3,7 @@
 
 import { Observable } from './Observable';
 import { Subscription } from './Subscription';
+import {v4 as uuidv4} from "uuid";
 
 /**
  * Note: This will add Symbol.observable globally for all TypeScript users,
@@ -24,23 +25,18 @@ export interface OperatorFunction<T, R> extends UnaryFunction<Observable<T>, Obs
 
 export class OperatorContext {
 
-  private _pipeId?: string;
+  private _observableContext?: ObservableContext;
   private _operatorIndex?: number;
-  private _pipeRunCounter?: PipeRunCounter;
 
   constructor(private readonly _operatorTag: OperatorTag) {
-  }
-
-  public set pipeId(id: string) {
-    this._pipeId = id;
   }
 
   public set operatorIndex(index: number) {
     this._operatorIndex = index;
   }
 
-  public set pipeRunCounter(counter: PipeRunCounter) {
-    this._pipeRunCounter = counter;
+  public set observableContext(context: ObservableContext) {
+    this._observableContext = context;
   }
 
   public get tag(): OperatorTag {
@@ -48,31 +44,43 @@ export class OperatorContext {
   }
 
   public emit(payload: any): void {
-    if (this._operatorIndex === 0) {
-      this._pipeRunCounter?.increment();
-    }
-    const currentCount = this._pipeRunCounter?.getCount();
+    const currentCount = this._observableContext?.emissionsCount;
     const operatorEvent = {
-      pipeId: this._pipeId,
-      pipeRun: currentCount,
+      type: RxjsEventType.EMISSION,
+      observableContext: this._observableContext,
       operatorIndex: this._operatorIndex,
+      emission: currentCount,
       payload
     };
-    (window as any).operatorEvents$.next(operatorEvent);
+    (window as any).rxjsBus$.next(operatorEvent);
   }
 }
 
-export class PipeRunCounter {
+export class ObservableContext {
 
-  private _count: number = -1;
+  private _emissionCount: number = -1;
+  private readonly _id;
 
-  public increment(): void {
-    this._count++;
+  constructor(private readonly _ignored = false) {
+    this._id = uuidv4();
   }
 
-  public getCount(): number {
-    return this._count;
+  get emissionsCount(): number {
+    return this._emissionCount;
   }
+
+  get id(): string {
+    return this._id
+  }
+
+  get ignored() {
+    return this._ignored;
+  }
+
+  incrementEmissionsCount() {
+    this._emissionCount++;
+  }
+
 }
 
 export interface OperatorObject<T, R> {
@@ -83,6 +91,13 @@ export interface OperatorObject<T, R> {
 export enum OperatorTag {
   MAP = 'map',
   TAP = 'tap',
+}
+
+export enum RxjsEventType {
+  OBSERVABLE = 'observable',
+  PIPE = 'pipe',
+  EMISSION = 'emission',
+  LIFT = 'lift'
 }
 
 export interface OperatorMap {
