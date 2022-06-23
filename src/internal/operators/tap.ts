@@ -128,7 +128,7 @@ export function tap<T>(
                 createOperatorSubscriber(
                     subscriber,
                     (value) => {
-                        operatorContext.emit('Tapping...');
+                        operatorContext.emit(`Tapping: ${value}`);
                         tapObserver.next?.(value);
                         subscriber.next(value);
                     },
